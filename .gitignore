@@ -6,10 +6,6 @@ __pycache__/
 .tools/
 .cache/
 artifacts/
-dbt/target/
-dbt/logs/
-dbt/dbt_packages/
-airflow-home/
 *.egg-info/
 dist/
 build/

@@ -4,7 +4,7 @@
 dbutils.widgets.text("source_month", "2026-01")
 dbutils.widgets.text("catalog", "workspace")
 dbutils.widgets.text("schema_prefix", "mobility")
-dbutils.widgets.text("project_root", "/Workspace/Users/joaopgher@gmail.com/urban_mobility")
+dbutils.widgets.text("project_root", "")
 
 # COMMAND ----------
 

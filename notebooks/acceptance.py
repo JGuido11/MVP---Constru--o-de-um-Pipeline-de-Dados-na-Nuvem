@@ -101,3 +101,13 @@ job.run("2026-01", "acceptance-recovery")
 assert totals("2026-01") == before
 print(json.dumps({"status": "PASS", "checks": ["quarantine", "warning_retention", "duplicate_retention",
     "month_replay", "other_month_unchanged", "empty_rejection_replacement", "failure_state", "recovery"]}))
+
+# COMMAND ----------
+# Exercita SQL nativo e persistência Delta da Gold no ambiente de teste isolado.
+from mobility.analytics import GoldBuilder
+builder = GoldBuilder(spark, config, dbutils.widgets.get('project_root'))
+builder.build(['2026-01', '2026-02'])
+assert spark.table(config.table('gold', 'fct_trips')).count() == 8
+builder.build(['2026-01', '2026-02'])
+assert spark.table(config.table('gold', 'fct_trips')).count() == 8
+print(json.dumps({'status':'PASS','checks':['native_gold_delta','gold_replay','gold_integrity']}))

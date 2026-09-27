@@ -1,10 +1,10 @@
-"""Bounded public-source downloads, also used by the local Airflow staging task."""
+"""Download público executado no Databricks para um Volume gerenciado."""
 from pathlib import Path
 import shutil
 import tempfile
 from urllib.request import Request, urlopen
 
-from mobility.config import PipelineConfig, source_month
+from mobility.config import source_month
 
 TRIP_BASE = "https://d37ci6vzurychx.cloudfront.net/trip-data"
 ZONE_URL = "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
@@ -44,19 +44,3 @@ class TripSourceReader:
             self.download(f"{TRIP_BASE}/{name}", destination / name),
             self.download(ZONE_URL, destination / "taxi_zone_lookup.csv"),
         )
-
-
-def stage_month(month: str, config: PipelineConfig, client=None) -> dict:
-    """Download outside Databricks and upload through its official Files API."""
-    source_month(month)
-    if client is None:
-        from databricks.sdk import WorkspaceClient
-        client = WorkspaceClient()
-    remote = f"{config.volume}/{month}"
-    client.files.create_directory(remote)
-    with tempfile.TemporaryDirectory() as directory:
-        paths = TripSourceReader().download_month(month, Path(directory))
-        for path in paths:
-            with path.open("rb") as stream:
-                client.files.upload(f"{remote}/{path.name}", stream, overwrite=True)
-    return {"source_month": month, "volume_directory": remote}

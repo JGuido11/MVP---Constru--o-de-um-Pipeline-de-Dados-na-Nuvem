@@ -1,97 +1,53 @@
-# Architecture and data dictionary
+# Arquitetura do pipeline
 
-## Services and interfaces
+## Plataforma e fluxo
 
-The three processing services are ingestion, preparation and analytics. They have
-separate entry points, input/output tables and retry boundaries. They are batch jobs,
-not independently hosted HTTP microservices.
+Todo processamento ocorre no Databricks. Arquivos ficam em um Volume gerenciado e as tabelas usam Delta Lake, organizadas no Unity Catalog. Um Job executa `notebooks/01_run_pipeline.py` com uma única tarefa. Dentro dela, os meses são processados sequencialmente e a Gold é reconstruída ao final.
 
-All monthly services accept `source_month` (`YYYY-MM`) and `run_id` (nonempty, at most
-256 characters). Airflow limits its user-selected months to January–March 2026. The
-underlying services accept other valid months for future extension.
+| Componente | Responsabilidade |
+|---|---|
+| `src/mobility/source.py` | Download opcional dos arquivos oficiais para o Volume. |
+| `src/mobility/storage.py` | Schemas, Volume, gravação Delta por mês e eventos. |
+| `src/mobility/jobs.py` | Ingestão Bronze e preparação Silver. |
+| `src/mobility/validation.py` | Tipagem, rejeições e alertas. |
+| `src/mobility/analytics.py` | SQL da Gold e validações antes/depois. |
+| `src/mobility/pipeline.py` | Sequência completa e evento final de sucesso/falha. |
+| `src/mobility/catalog.py` | Comentários de tabelas e colunas. |
+| `notebooks/analysis.py`, `06_quality.py`, `07_catalog.py` | Análises, avaliação de qualidade e inspeção do catálogo. |
 
-Airflow is the control plane. Databricks holds source files and Delta tables and runs
-PySpark. dbt owns analytical SQL transformations and tests. Local Python runs only
-orchestration and file transfer, not trip-data transformations.
+## Modelagem
 
-## Tables
+Bronze preserva os campos da fonte. Silver mantém registros normalizados, separa rejeitados e cria o lookup tipado. Gold contém uma dimensão mensal de zonas, uma view de preparação, uma fato e três agregações.
 
-Default catalog: `workspace`. Configurable schema prefix: `mobility`.
+| Relação | Cardinalidade e chave |
+|---|---|
+| `silver.taxi_zones` → `gold.dim_zones` | Uma zona por `(source_month, zone_id)`; `zone_key = mês:ID`. |
+| `gold.fct_trips` → `gold.dim_zones` (origem) | Muitos registros para uma zona; `pickup_zone_key = zone_key`. |
+| `gold.fct_trips` → `gold.dim_zones` (destino) | Muitos registros para uma zona; `dropoff_zone_key = zone_key`. |
+| Fato → atividade por embarque | Agrupar por mês de origem, zona e hora. |
+| Fato → atividade mensal | Agrupar pelo mês real do embarque. |
+| Fato → duração por rota | Agrupar por mês de origem e par de zonas. |
 
-| Table | Grain and principal fields |
-| --- | --- |
-| `mobility_bronze.yellow_trips` | One original trip row; all source columns, `source_month`, `source_filename`, `ingested_at`, `ingestion_run_id` |
-| `mobility_bronze.taxi_zones` | One original lookup row per snapshot month, plus the same metadata |
-| `mobility_silver.trips` | One accepted source record, normalized fields and validation arrays |
-| `mobility_silver.rejected_trips` | One invalid source record, normalized fields and rejection reason array; the original file remains in bronze |
-| `mobility_silver.taxi_zones` | One zone per source month: `zone_id`, `borough`, `zone_name`, `service_zone` |
-| `mobility_ops.month_status` | One current publication state per source month and its row counts |
-| `mobility_ops.run_events` | Append-only service attempt events: month, run, service, status, event time, error class |
-| `mobility_gold.dim_zones` | One source month + zone ID; `zone_key` is `YYYY-MM:ID` |
-| `mobility_gold.fct_trips` | One accepted record with calendar fields and zone names |
-| `mobility_gold.mart_pickup_activity` | Source month + pickup zone + local pickup hour |
-| `mobility_gold.mart_monthly_activity` | Actual calendar month of pickup |
-| `mobility_gold.mart_route_duration` | Source month + pickup zone + drop-off zone |
+O [catálogo](CATALOG.md) apresenta todos os objetos previstos. A escolha de dimensão mensal evita vincular registros a um lookup substituído por outra execução. Isso não comprova que o lookup baixado hoje representa historicamente o mês da viagem. Registros semelhantes não recebem IDs artificiais nem são eliminados.
 
-### Normalized trip fields
+## Transformações e qualidade
 
-| Field | Type / interpretation |
-| --- | --- |
-| `pickup_at`, `dropoff_at` | Timestamp without timezone; NYC local wall-clock time |
-| `pickup_zone_id`, `dropoff_zone_id` | Integer TLC location IDs |
-| `trip_distance_miles` | Double, distance in miles |
-| `fare_amount`, `total_amount` | Decimal(18,2), recorded USD amounts |
-| `duration_minutes` | Seconds between timestamps / 60.0; wall-clock duration |
-| `rejection_reasons` | Array of reason strings; empty for accepted rows |
-| `quality_warnings` | Array of nonblocking warning strings |
-| `preparation_run_id` | Identifier of the preparation attempt that wrote this row |
+Tipos normalizados: timestamps locais sem fuso, IDs inteiros, distância double e valores monetários decimal(18,2). Timestamps inválidos, ordem temporal invertida ou zonas desconhecidas geram rejeição. Distâncias e valores suspeitos geram alertas preservados. Duração é a diferença em segundos dividida por 60. Os limites numéricos são heurísticas de triagem, não detecção de fraude.
 
-## Validation policy
+A fato enriquece origem e destino por LEFT JOIN. A validação das chaves da dimensão e dos relacionamentos detecta ausências e multiplicação indevida por duplicidade. As agregações reconciliam contagem e tarifa com a Silver. A soma de um grupo com todas as tarifas nulas é zero, mas `missing_fare_count` na agregação mensal permite identificar a ausência.
 
-Reject missing/unparseable timestamps, drop-off before pickup, and pickup/drop-off
-IDs absent from the monthly lookup. Zero-duration trips remain accepted.
+## Reexecução, falhas e publicação
 
-Flag, but retain, distances missing/NaN/nonpositive/over 100 miles; fares missing,
-negative or over USD 500; totals missing or negative; and pickup dates outside the
-source month. Thresholds are screening heuristics, not fraud classifications.
-An accepted row with multiple warnings is counted once in `unusual_count`.
+Cada gravação Bronze/Silver usa `replaceWhere` para substituir apenas a partição do mês solicitado, inclusive quando a quarentena fica vazia. A Gold é reconstruída a partir de todos os meses aceitos disponíveis nos schemas selecionados. Use um prefixo dedicado para não incluir meses de outro estudo.
 
-Bronze preserves source schema. Missing required columns or incompatible schema
-changes fail ingestion instead of silently discarding fields. TLC's 2025 congestion
-fee field stays in bronze. Source schema evolution must be reviewed before a future
-period is added. Lookup IDs 264/265, if present in the official lookup, remain valid
-but represent geographically nonspecific locations.
+`ops.month_status` registra preparação, não publicação da Gold: RUNNING → INGESTED → RUNNING → SUCCESS, ou FAILED. A construção da Gold exige todos os meses rastreados em SUCCESS e todos os meses solicitados presentes. Também verifica a geração da preparação e as contagens de entrada/saída antes de gravar os modelos.
 
-The fact table has no invented unique trip ID. Identical source records are retained.
-Monetary NULLs remain visible; summaries coalesce an all-NULL sum to zero and monthly
-outputs include `missing_fare_count` so that zero is not mistaken for complete data.
+O Job completo só termina com sucesso após os controles da Gold e os comentários do catálogo. `ops.run_events` registra a etapa `pipeline`; sua coluna de mês referencia o primeiro mês da execução e `run_id` identifica a execução inteira. Em caso de falha, alguma tabela Gold pode já ter sido atualizada. Não há transação atômica entre tabelas: bloqueie consumo até a conclusão de uma nova execução bem-sucedida.
 
-## Replay and publication
+A configuração limita o Job a uma execução ativa. Essa configuração não bloqueia notebooks avulsos nem outros Jobs: não sobreponha escritores nos mesmos schemas. Notebooks separados existem para diagnóstico e execução manual sequencial. Depois do teste de reprocessamento, reconstrua a Gold para atualizar metadados e resultados.
 
-Delta `replaceWhere` overwrites only the requested source-month partition. Even an
-empty rejection set replaces the previous rejection partition. Other months remain
-unchanged. Bronze and silver writes are individually atomic; the whole pipeline is not
-a cross-table transaction. Month state becomes RUNNING before writes and SUCCESS only
-after preparation reconciles persisted outputs.
+## Limitações
 
-Analytics checks that every tracked month is SUCCESS and the requested month exists.
-dbt also verifies required values, dimensional relationships, row-count reconciliation,
-preparation generation, and aggregate totals. Gold models are rebuilt from all accepted
-months: three months is a deliberately small scope, avoiding a second incremental-write
-mechanism. A failed dbt build can leave some rebuilt gold tables; consumers should use
-only a fully successful Airflow run as the publication signal.
+Arquivos baixados novamente substituem a versão atual no Volume; não há arquivo histórico imutável por revisão da fonte. Mudança de schema deve ser revisada; colunas novas precisam entrar no catálogo. Duração usa relógio local e pode ser afetada pelo horário de verão. P1 e P3 incluem registros fora do mês do arquivo; P2 filtra os meses calendário do trimestre. A análise deve informar essa diferença.
 
-The project assumes a single writer coordinated by Airflow. Do not overlap independent
-manual runs or edit bronze/silver tables manually. Original files in the landing volume
-are replaced on re-download; this preserves the current source, not a permanent archive
-of every publisher revision. Monthly zone snapshots preserve the downloaded mapping,
-not a verified historical January 2026 mapping.
-
-## Analytical limits
-
-Completed trips measure observed activity, not unmet demand. Recorded amounts are not
-profit and do not include a cost model. Route medians use approximate percentiles and
-rankings require at least 100 trips per month/route. Out-of-period pickups remain visible
-in monthly summaries; the report filters the target calendar quarter explicitly.
-Naive local timestamps cannot resolve all daylight-saving transitions; wall-clock
-durations near those transitions require caution. No predictions or causal claims are made.
+O MVP não comprova disponibilidade de produção, demanda reprimida, rentabilidade ou causalidade. Não há números de negócio declarados antes da execução e inspeção das evidências.

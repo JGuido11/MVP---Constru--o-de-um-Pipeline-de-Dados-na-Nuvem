@@ -1,83 +1,36 @@
 bundle:
   name: urban-mobility
-
 variables:
   catalog:
     default: workspace
   schema_prefix:
     default: mobility
-
-workspace:
-  host: https://dbc-78838fcb-cb4b.cloud.databricks.com
-
 sync:
   include:
     - src/**
+    - sql/**
     - notebooks/**
-  exclude:
-    - .env
-    - .venv*/**
-    - artifacts/**
-    - .tools/**
-
 resources:
   jobs:
-    bootstrap:
-      name: mobility-bootstrap
-      max_concurrent_runs: 1
-      tasks:
-        - task_key: bootstrap
-          timeout_seconds: 1800
-          notebook_task:
-            notebook_path: ./notebooks/bootstrap.py
-            base_parameters:
-              catalog: ${var.catalog}
-              schema_prefix: ${var.schema_prefix}
-              project_root: ${workspace.file_path}
-    ingestion:
-      name: mobility-ingestion
+    pipeline:
+      name: mobility-pipeline
       max_concurrent_runs: 1
       queue:
         enabled: true
-      parameters:
-        - name: source_month
-          default: '2026-01'
-        - name: run_id
-          default: '{{job.run_id}}'
-        - name: source_mode
-          default: volume
       tasks:
-        - task_key: ingest
-          timeout_seconds: 7200
+        - task_key: pipeline
+          timeout_seconds: 21600
           notebook_task:
-            notebook_path: ./notebooks/02_ingest_bronze.py
+            notebook_path: ./notebooks/01_run_pipeline.py
             base_parameters:
               catalog: ${var.catalog}
               schema_prefix: ${var.schema_prefix}
               project_root: ${workspace.file_path}
-    preparation:
-      name: mobility-preparation
-      max_concurrent_runs: 1
-      queue:
-        enabled: true
-      parameters:
-        - name: source_month
-          default: '2026-01'
-        - name: run_id
-          default: '{{job.run_id}}'
-      tasks:
-        - task_key: prepare
-          timeout_seconds: 7200
-          notebook_task:
-            notebook_path: ./notebooks/03_ingest_silver.py
-            base_parameters:
-              catalog: ${var.catalog}
-              schema_prefix: ${var.schema_prefix}
-              project_root: ${workspace.file_path}
-
+              source_months: '2026-01,2026-02,2026-03'
+              source_mode: volume
+              run_id: '{{job.run_id}}'
 targets:
   dev:
     default: true
-    # Explicit job serialization also applies when manually running a job.
     workspace:
       root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
