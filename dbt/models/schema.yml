@@ -1,0 +1,49 @@
+version: 2
+models:
+  - name: connectivity_check
+    description: End-to-end SQL connectivity gate, run before downloading taxi data.
+    columns:
+      - name: probe_id
+        data_tests: [not_null, unique]
+  - name: dim_zones
+    description: Month-specific zone snapshots; one row per source month and location ID.
+    columns:
+      - name: zone_key
+        data_tests: [not_null, unique]
+      - name: zone_id
+        data_tests: [not_null]
+  - name: stg_trips
+    description: Accepted trips with calendar and composite zone keys.
+    columns:
+      - name: source_month
+        data_tests: [not_null]
+      - name: pickup_at
+        data_tests: [not_null]
+      - name: dropoff_at
+        data_tests: [not_null]
+  - name: fct_trips
+    description: One row per accepted source record. TLC does not supply a reliable unique trip identifier.
+    columns:
+      - name: pickup_zone_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_zones')
+                field: zone_key
+      - name: dropoff_zone_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_zones')
+                field: zone_key
+  - name: mart_pickup_activity
+    description: Completed trips and recorded fares by source month, pickup zone, and local hour.
+  - name: mart_monthly_activity
+    description: Activity by actual pickup month, including separately visible out-of-period records.
+    columns:
+      - name: pickup_month
+        data_tests: [unique, not_null]
+  - name: mart_route_duration
+    description: Typical route durations; use at least 100 trips when ranking routes.
