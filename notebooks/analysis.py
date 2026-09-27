@@ -6,17 +6,23 @@ dbutils.widgets.text("schema_prefix", "mobility")
 sys.path.insert(0, dbutils.widgets.get("project_root") + "/src")
 from mobility.config import PipelineConfig
 config = PipelineConfig(dbutils.widgets.get("catalog"), dbutils.widgets.get("schema_prefix"))
+from mobility.analytics import GoldBuilder, require_ready
+states = [r.asDict() for r in spark.table(config.table('ops', 'month_status')).collect()]
+require_ready(states, ['2026-01', '2026-02', '2026-03'])
+builder = GoldBuilder(spark, config, dbutils.widgets.get('project_root'))
+for check in ('gold_generation_matches', 'aggregate_totals_reconcile'):
+    builder.check(check)
 
 # COMMAND ----------
-# Most active pickup locations/hours across the loaded source months.
+# P1: zonas e horários com mais registros aceitos nos arquivos carregados.
 display(spark.sql(f"""
-SELECT pickup_zone_name, pickup_hour, SUM(trip_count) AS completed_trips
+SELECT pickup_zone_id, pickup_zone_name, pickup_hour, SUM(trip_count) AS completed_trips
 FROM {config.table('gold', 'mart_pickup_activity')}
-GROUP BY pickup_zone_name, pickup_hour ORDER BY completed_trips DESC LIMIT 20
+GROUP BY pickup_zone_id, pickup_zone_name, pickup_hour ORDER BY completed_trips DESC LIMIT 20
 """))
 
 # COMMAND ----------
-# Calendar-month comparison; out-of-period source records are excluded here explicitly.
+# P2: comparação mensal; registros fora do trimestre são excluídos explicitamente.
 display(spark.sql(f"""
 SELECT *, trip_count - LAG(trip_count) OVER (ORDER BY pickup_month) AS trip_count_change
 FROM {config.table('gold', 'mart_monthly_activity')}
@@ -24,7 +30,7 @@ WHERE pickup_month BETWEEN '2026-01' AND '2026-03' ORDER BY pickup_month
 """))
 
 # COMMAND ----------
-# Route/month median duration, with a minimum of 100 completed trips.
+# P3: mediana por rota/mês, com pelo menos 100 registros aceitos.
 display(spark.sql(f"""
 SELECT * FROM {config.table('gold', 'mart_route_duration')}
 WHERE trip_count >= 100 ORDER BY median_duration_minutes DESC LIMIT 20

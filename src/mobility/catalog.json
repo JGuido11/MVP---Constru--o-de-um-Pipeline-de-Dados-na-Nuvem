@@ -1,0 +1,680 @@
+{
+  "fields": {
+    "VendorID": {
+      "type": "numérico nativo",
+      "description": "Código do provedor da viagem",
+      "domain": "1, 2, 6, 7; conferir versão da fonte",
+      "lineage": "Parquet TLC, sem transformação na Bronze"
+    },
+    "tpep_pickup_datetime": {
+      "type": "timestamp nativo",
+      "description": "Início registrado da viagem",
+      "domain": "Data/hora válida; fora do mês é possível na fonte",
+      "lineage": "Parquet TLC"
+    },
+    "tpep_dropoff_datetime": {
+      "type": "timestamp nativo",
+      "description": "Fim registrado da viagem",
+      "domain": "Data/hora válida; comparar ao início",
+      "lineage": "Parquet TLC"
+    },
+    "passenger_count": {
+      "type": "numérico nativo",
+      "description": "Quantidade informada de passageiros",
+      "domain": "Inteiro não negativo esperado; nulos e extremos devem ser investigados",
+      "lineage": "Parquet TLC; preservado na Bronze"
+    },
+    "trip_distance": {
+      "type": "numérico nativo",
+      "description": "Distância em milhas",
+      "domain": "Maior que zero esperado; acima de 100 recebe alerta na Silver",
+      "lineage": "Parquet TLC"
+    },
+    "RatecodeID": {
+      "type": "numérico nativo",
+      "description": "Código tarifário",
+      "domain": "1–6 ou 99; valores diferentes requerem investigação",
+      "lineage": "Parquet TLC"
+    },
+    "store_and_fwd_flag": {
+      "type": "string",
+      "description": "Indicador de transmissão posterior",
+      "domain": "Y ou N; nulos devem ser medidos",
+      "lineage": "Parquet TLC"
+    },
+    "PULocationID": {
+      "type": "numérico nativo",
+      "description": "Identificador da zona de início/fim, respectivamente",
+      "domain": "IDs presentes no lookup; 264/265 podem indicar localização inespecífica",
+      "lineage": "Parquet TLC"
+    },
+    "DOLocationID": {
+      "type": "numérico nativo",
+      "description": "Identificador da zona de início/fim, respectivamente",
+      "domain": "IDs presentes no lookup; 264/265 podem indicar localização inespecífica",
+      "lineage": "Parquet TLC"
+    },
+    "payment_type": {
+      "type": "numérico nativo",
+      "description": "Código de pagamento",
+      "domain": "0–6 segundo o dicionário consultado",
+      "lineage": "Parquet TLC"
+    },
+    "fare_amount": {
+      "type": "decimal(18,2) na Silver; nativo na Bronze",
+      "description": "Tarifa registrada em USD",
+      "domain": "0–500 como faixa de triagem; nulos, negativos e acima de 500 geram alerta",
+      "lineage": "Parquet TLC; try_cast na Silver"
+    },
+    "total_amount": {
+      "type": "decimal(18,2) na Silver; nativo na Bronze",
+      "description": "Total registrado em USD",
+      "domain": "Não negativo esperado; nulos e negativos geram alerta; sem teto imposto",
+      "lineage": "Parquet TLC; try_cast na Silver"
+    },
+    "extra": {
+      "type": "numérico nativo",
+      "description": "Adicionais tarifários em USD.",
+      "domain": "Não negativo esperado; ajustes negativos devem ser investigados, não apagados",
+      "lineage": "Parquet TLC; somente Bronze, sem uso nas respostas"
+    },
+    "mta_tax": {
+      "type": "numérico nativo",
+      "description": "Tributo MTA registrado em USD.",
+      "domain": "Não negativo esperado; ajustes negativos devem ser investigados, não apagados",
+      "lineage": "Parquet TLC; somente Bronze, sem uso nas respostas"
+    },
+    "tip_amount": {
+      "type": "numérico nativo",
+      "description": "Gorjeta registrada em USD; dinheiro não está incluído.",
+      "domain": "Não negativo esperado; ajustes negativos devem ser investigados, não apagados",
+      "lineage": "Parquet TLC; somente Bronze, sem uso nas respostas"
+    },
+    "tolls_amount": {
+      "type": "numérico nativo",
+      "description": "Pedágios registrados em USD.",
+      "domain": "Não negativo esperado; ajustes negativos devem ser investigados, não apagados",
+      "lineage": "Parquet TLC; somente Bronze, sem uso nas respostas"
+    },
+    "improvement_surcharge": {
+      "type": "numérico nativo",
+      "description": "Adicional de melhoria em USD.",
+      "domain": "Não negativo esperado; ajustes negativos devem ser investigados, não apagados",
+      "lineage": "Parquet TLC; somente Bronze, sem uso nas respostas"
+    },
+    "congestion_surcharge": {
+      "type": "numérico nativo",
+      "description": "Adicional estadual de congestionamento em USD.",
+      "domain": "Não negativo esperado; ajustes negativos devem ser investigados, não apagados",
+      "lineage": "Parquet TLC; somente Bronze, sem uso nas respostas"
+    },
+    "airport_fee": {
+      "type": "numérico nativo",
+      "description": "Taxa de embarque aeroportuário em USD.",
+      "domain": "Não negativo esperado; ajustes negativos devem ser investigados, não apagados",
+      "lineage": "Parquet TLC; somente Bronze, sem uso nas respostas"
+    },
+    "cbd_congestion_fee": {
+      "type": "numérico nativo",
+      "description": "Cobrança da zona de alívio de congestionamento em USD.",
+      "domain": "Não negativo esperado; ajustes negativos devem ser investigados, não apagados",
+      "lineage": "Parquet TLC; somente Bronze, sem uso nas respostas"
+    },
+    "LocationID": {
+      "type": "string na Bronze",
+      "description": "Identificador da zona",
+      "domain": "Inteiro conversível e único por snapshot mensal",
+      "lineage": "CSV TLC; lido como texto"
+    },
+    "Borough": {
+      "type": "string",
+      "description": "Região administrativa da zona",
+      "domain": "Categorias do lookup oficial; incluir casos desconhecidos",
+      "lineage": "CSV TLC"
+    },
+    "Zone": {
+      "type": "string",
+      "description": "Nome da zona",
+      "domain": "Nomes do lookup oficial",
+      "lineage": "CSV TLC"
+    },
+    "service_zone": {
+      "type": "string",
+      "description": "Classificação de serviço da zona",
+      "domain": "Categorias observadas no lookup, incluindo possíveis nulos",
+      "lineage": "CSV TLC"
+    },
+    "source_month": {
+      "type": "string",
+      "description": "Mês do arquivo/snapshot",
+      "domain": "YYYY-MM; escopo inicial 2026-01 a 2026-03",
+      "lineage": "Parâmetro de ingestão; não é o mês real da viagem"
+    },
+    "source_filename": {
+      "type": "string",
+      "description": "Nome do arquivo ingerido",
+      "domain": "Nome não vazio de Parquet ou CSV",
+      "lineage": "Caminho de entrada"
+    },
+    "ingested_at": {
+      "type": "timestamp",
+      "description": "Instante da ingestão",
+      "domain": "Instante válido",
+      "lineage": "current_timestamp()"
+    },
+    "ingestion_run_id": {
+      "type": "string",
+      "description": "Identificador da execução da Bronze",
+      "domain": "Texto não vazio, até 256 caracteres",
+      "lineage": "Parâmetro run_id"
+    },
+    "pickup_at": {
+      "type": "timestamp_ntz",
+      "description": "Início/fim local da viagem, respectivamente",
+      "domain": "Não nulo nos aceitos; fim >= início",
+      "lineage": "try_cast dos timestamps da Bronze"
+    },
+    "dropoff_at": {
+      "type": "timestamp_ntz",
+      "description": "Início/fim local da viagem, respectivamente",
+      "domain": "Não nulo nos aceitos; fim >= início",
+      "lineage": "try_cast dos timestamps da Bronze"
+    },
+    "pickup_zone_id": {
+      "type": "int",
+      "description": "Identificador de zona",
+      "domain": "Membro do lookup; único por mês apenas na dimensão/lookup",
+      "lineage": "Cast de PULocationID, DOLocationID ou LocationID"
+    },
+    "dropoff_zone_id": {
+      "type": "int",
+      "description": "Identificador de zona",
+      "domain": "Membro do lookup; único por mês apenas na dimensão/lookup",
+      "lineage": "Cast de PULocationID, DOLocationID ou LocationID"
+    },
+    "zone_id": {
+      "type": "int",
+      "description": "Identificador de zona",
+      "domain": "Membro do lookup; único por mês apenas na dimensão/lookup",
+      "lineage": "Cast de PULocationID, DOLocationID ou LocationID"
+    },
+    "trip_distance_miles": {
+      "type": "double",
+      "description": "Distância normalizada em milhas",
+      "domain": "Faixa de triagem (0,100]; exceções mantidas com alerta",
+      "lineage": "try_cast(trip_distance)"
+    },
+    "duration_minutes": {
+      "type": "decimal calculado pelo Spark",
+      "description": "Duração em minutos",
+      "domain": ">= 0 nos aceitos; extremos devem ser analisados",
+      "lineage": "timestampdiff(SECOND, pickup_at, dropoff_at) / 60.0"
+    },
+    "rejection_reasons": {
+      "type": "array<string>",
+      "description": "Regras impeditivas violadas",
+      "domain": "missing_or_invalid_timestamp; reversed_journey; invalid_pickup_zone; invalid_dropoff_zone; vazio nos aceitos",
+      "lineage": "TripValidator.validate"
+    },
+    "quality_warnings": {
+      "type": "array<string>",
+      "description": "Alertas não impeditivos",
+      "domain": "unusual_distance; unusual_fare; unusual_total; pickup_outside_source_month",
+      "lineage": "TripValidator.validate; registros mantidos"
+    },
+    "preparation_run_id": {
+      "type": "string",
+      "description": "Execução que produziu a Silver",
+      "domain": "Texto não vazio até 256 caracteres; igual ao run_id do status mensal",
+      "lineage": "Parâmetro da preparação"
+    },
+    "borough": {
+      "type": "string",
+      "description": "Região e nome da zona, respectivamente",
+      "domain": "Valores do lookup mensal",
+      "lineage": "Borough e Zone renomeados"
+    },
+    "zone_name": {
+      "type": "string",
+      "description": "Região e nome da zona, respectivamente",
+      "domain": "Valores do lookup mensal",
+      "lineage": "Borough e Zone renomeados"
+    },
+    "zone_key": {
+      "type": "string",
+      "description": "Chave composta da zona e mês",
+      "domain": "YYYY-MM:ID; zone_key única na dimensão",
+      "lineage": "concat(source_month, dois-pontos, zone_id correspondente)"
+    },
+    "pickup_zone_key": {
+      "type": "string",
+      "description": "Chave composta da zona e mês",
+      "domain": "YYYY-MM:ID; zone_key única na dimensão",
+      "lineage": "concat(source_month, dois-pontos, zone_id correspondente)"
+    },
+    "dropoff_zone_key": {
+      "type": "string",
+      "description": "Chave composta da zona e mês",
+      "domain": "YYYY-MM:ID; zone_key única na dimensão",
+      "lineage": "concat(source_month, dois-pontos, zone_id correspondente)"
+    },
+    "pickup_date": {
+      "type": "date",
+      "description": "Data local do início",
+      "domain": "Data válida",
+      "lineage": "cast(pickup_at as date)"
+    },
+    "pickup_month": {
+      "type": "string",
+      "description": "Mês calendário do início",
+      "domain": "YYYY-MM; pode diferir de source_month",
+      "lineage": "date_format(pickup_at)"
+    },
+    "pickup_hour": {
+      "type": "int",
+      "description": "Hora local do início",
+      "domain": "0–23",
+      "lineage": "hour(pickup_at)"
+    },
+    "has_quality_warning": {
+      "type": "boolean",
+      "description": "Presença de pelo menos um alerta",
+      "domain": "true ou false",
+      "lineage": "size(quality_warnings) > 0"
+    },
+    "pickup_zone_name": {
+      "type": "string",
+      "description": "Nome/região de origem/destino conforme prefixo",
+      "domain": "Valores do lookup mensal; nomes podem ser desconhecidos",
+      "lineage": "LEFT JOIN com dim_zones pelas chaves compostas"
+    },
+    "dropoff_zone_name": {
+      "type": "string",
+      "description": "Nome/região de origem/destino conforme prefixo",
+      "domain": "Valores do lookup mensal; nomes podem ser desconhecidos",
+      "lineage": "LEFT JOIN com dim_zones pelas chaves compostas"
+    },
+    "pickup_borough": {
+      "type": "string",
+      "description": "Nome/região de origem/destino conforme prefixo",
+      "domain": "Valores do lookup mensal; nomes podem ser desconhecidos",
+      "lineage": "LEFT JOIN com dim_zones pelas chaves compostas"
+    },
+    "dropoff_borough": {
+      "type": "string",
+      "description": "Nome/região de origem/destino conforme prefixo",
+      "domain": "Valores do lookup mensal; nomes podem ser desconhecidos",
+      "lineage": "LEFT JOIN com dim_zones pelas chaves compostas"
+    },
+    "trip_count": {
+      "type": "bigint",
+      "description": "Número de registros aceitos no grupo",
+      "domain": "Inteiro >= 1 em grupos existentes",
+      "lineage": "count(*) da fato"
+    },
+    "recorded_fare_amount": {
+      "type": "decimal(28,2)",
+      "description": "Soma de tarifa/total registrado, respectivamente",
+      "domain": "Pode ser negativa devido aos alertas mantidos; soma totalmente nula vira zero",
+      "lineage": "coalesce(sum(fare_amount ou total_amount),0)"
+    },
+    "recorded_total_amount": {
+      "type": "decimal(28,2)",
+      "description": "Soma de tarifa/total registrado, respectivamente",
+      "domain": "Pode ser negativa devido aos alertas mantidos; soma totalmente nula vira zero",
+      "lineage": "coalesce(sum(fare_amount ou total_amount),0)"
+    },
+    "unusual_trip_count": {
+      "type": "bigint",
+      "description": "Quantidade com alerta / tarifa nula, respectivamente",
+      "domain": "0 até trip_count",
+      "lineage": "Soma de indicadores na fato"
+    },
+    "missing_fare_count": {
+      "type": "bigint",
+      "description": "Quantidade com alerta / tarifa nula, respectivamente",
+      "domain": "0 até trip_count",
+      "lineage": "Soma de indicadores na fato"
+    },
+    "average_duration_minutes": {
+      "type": "decimal calculado pelo Spark",
+      "description": "Duração média do grupo",
+      "domain": ">= 0",
+      "lineage": "avg(duration_minutes)"
+    },
+    "median_duration_minutes": {
+      "type": "mesmo tipo de duration_minutes",
+      "description": "Mediana aproximada do grupo",
+      "domain": ">= 0",
+      "lineage": "percentile_approx(duration_minutes,0.5,10000)"
+    },
+    "run_id": {
+      "type": "string",
+      "description": "Identificador da execução",
+      "domain": "Texto não vazio até 256 caracteres",
+      "lineage": "Execução do pipeline/etapa"
+    },
+    "status": {
+      "type": "string",
+      "description": "Estado da etapa ou execução",
+      "domain": "month_status: RUNNING, INGESTED, SUCCESS, FAILED; run_events: STARTED, SUCCESS, FAILED",
+      "lineage": "Escrita pelo pipeline"
+    },
+    "input_count": {
+      "type": "bigint",
+      "description": "Contagem de entrada, aceita, rejeitada ou aceita com alerta, conforme nome",
+      "domain": "Inteiro >= 0; nulo antes da etapa que calcula",
+      "lineage": "Contagens de tabelas persistidas"
+    },
+    "accepted_count": {
+      "type": "bigint",
+      "description": "Contagem de entrada, aceita, rejeitada ou aceita com alerta, conforme nome",
+      "domain": "Inteiro >= 0; nulo antes da etapa que calcula",
+      "lineage": "Contagens de tabelas persistidas"
+    },
+    "rejected_count": {
+      "type": "bigint",
+      "description": "Contagem de entrada, aceita, rejeitada ou aceita com alerta, conforme nome",
+      "domain": "Inteiro >= 0; nulo antes da etapa que calcula",
+      "lineage": "Contagens de tabelas persistidas"
+    },
+    "unusual_count": {
+      "type": "bigint",
+      "description": "Contagem de entrada, aceita, rejeitada ou aceita com alerta, conforme nome",
+      "domain": "Inteiro >= 0; nulo antes da etapa que calcula",
+      "lineage": "Contagens de tabelas persistidas"
+    },
+    "updated_at": {
+      "type": "timestamp",
+      "description": "Instante da atualização/evento",
+      "domain": "Timestamp válido",
+      "lineage": "current_timestamp()"
+    },
+    "event_time": {
+      "type": "timestamp",
+      "description": "Instante da atualização/evento",
+      "domain": "Timestamp válido",
+      "lineage": "current_timestamp()"
+    },
+    "service": {
+      "type": "string",
+      "description": "Etapa que emitiu o evento",
+      "domain": "ingestion, preparation ou pipeline",
+      "lineage": "Classe da etapa"
+    },
+    "error_type": {
+      "type": "string",
+      "description": "Classe da exceção",
+      "domain": "Texto; nulo em sucesso",
+      "lineage": "Tipo da exceção capturada"
+    },
+    "probe_id": {
+      "type": "int",
+      "description": "Marcador de conectividade",
+      "domain": "1",
+      "lineage": "Bootstrap"
+    },
+    "test_run_id": {
+      "type": "string",
+      "description": "Identificador do teste de replay",
+      "domain": "Texto não vazio",
+      "lineage": "UUID do notebook opcional"
+    },
+    "stage": {
+      "type": "string",
+      "description": "Etapa da evidência de replay",
+      "domain": "BEFORE, AFTER, PASS, FAIL",
+      "lineage": "Notebook opcional de reprocessamento"
+    },
+    "recorded_at": {
+      "type": "timestamp",
+      "description": "Instante da evidência",
+      "domain": "Timestamp válido",
+      "lineage": "current_timestamp()"
+    },
+    "evidence_json": {
+      "type": "string",
+      "description": "Snapshot de métricas ou resultado do teste",
+      "domain": "JSON válido; esquema varia com stage",
+      "lineage": "Notebook de reprocessamento"
+    }
+  },
+  "tables": {
+    "bronze.yellow_trips": {
+      "description": "Um registro original de viagem; esquema físico preservado do Parquet.",
+      "columns": [
+        "VendorID",
+        "tpep_pickup_datetime",
+        "tpep_dropoff_datetime",
+        "passenger_count",
+        "trip_distance",
+        "RatecodeID",
+        "store_and_fwd_flag",
+        "PULocationID",
+        "DOLocationID",
+        "payment_type",
+        "fare_amount",
+        "extra",
+        "mta_tax",
+        "tip_amount",
+        "tolls_amount",
+        "improvement_surcharge",
+        "total_amount",
+        "congestion_surcharge",
+        "airport_fee",
+        "cbd_congestion_fee",
+        "source_month",
+        "source_filename",
+        "ingested_at",
+        "ingestion_run_id"
+      ]
+    },
+    "bronze.taxi_zones": {
+      "description": "Uma linha original do lookup por mês de coleta; CSV como texto.",
+      "columns": [
+        "LocationID",
+        "Borough",
+        "Zone",
+        "service_zone",
+        "source_month",
+        "source_filename",
+        "ingested_at",
+        "ingestion_run_id"
+      ]
+    },
+    "silver.trips": {
+      "description": "Uma linha por registro aceito; multiplicidade da fonte preservada.",
+      "columns": [
+        "pickup_at",
+        "dropoff_at",
+        "pickup_zone_id",
+        "dropoff_zone_id",
+        "trip_distance_miles",
+        "fare_amount",
+        "total_amount",
+        "source_month",
+        "source_filename",
+        "ingested_at",
+        "ingestion_run_id",
+        "rejection_reasons",
+        "quality_warnings",
+        "duration_minutes",
+        "preparation_run_id"
+      ]
+    },
+    "silver.rejected_trips": {
+      "description": "Uma linha por registro rejeitado e seus motivos.",
+      "columns": [
+        "pickup_at",
+        "dropoff_at",
+        "pickup_zone_id",
+        "dropoff_zone_id",
+        "trip_distance_miles",
+        "fare_amount",
+        "total_amount",
+        "source_month",
+        "source_filename",
+        "ingested_at",
+        "ingestion_run_id",
+        "rejection_reasons",
+        "quality_warnings",
+        "duration_minutes",
+        "preparation_run_id"
+      ]
+    },
+    "silver.taxi_zones": {
+      "description": "Uma zona por mês de coleta.",
+      "columns": [
+        "zone_id",
+        "borough",
+        "zone_name",
+        "service_zone",
+        "source_month"
+      ]
+    },
+    "gold.dim_zones": {
+      "description": "Dimensão: uma zona por source_month; chave composta.",
+      "columns": [
+        "zone_key",
+        "source_month",
+        "zone_id",
+        "borough",
+        "zone_name",
+        "service_zone"
+      ]
+    },
+    "gold.stg_trips": {
+      "description": "View intermediária: uma linha por registro aceito.",
+      "columns": [
+        "pickup_at",
+        "dropoff_at",
+        "pickup_zone_id",
+        "dropoff_zone_id",
+        "trip_distance_miles",
+        "fare_amount",
+        "total_amount",
+        "source_month",
+        "source_filename",
+        "ingested_at",
+        "ingestion_run_id",
+        "rejection_reasons",
+        "quality_warnings",
+        "duration_minutes",
+        "preparation_run_id",
+        "pickup_zone_key",
+        "dropoff_zone_key",
+        "pickup_date",
+        "pickup_month",
+        "pickup_hour",
+        "has_quality_warning"
+      ]
+    },
+    "gold.fct_trips": {
+      "description": "Fato: uma linha por registro aceito com duas referências à mesma dimensão de zonas.",
+      "columns": [
+        "pickup_at",
+        "dropoff_at",
+        "pickup_zone_id",
+        "dropoff_zone_id",
+        "trip_distance_miles",
+        "fare_amount",
+        "total_amount",
+        "source_month",
+        "source_filename",
+        "ingested_at",
+        "ingestion_run_id",
+        "rejection_reasons",
+        "quality_warnings",
+        "duration_minutes",
+        "preparation_run_id",
+        "pickup_zone_key",
+        "dropoff_zone_key",
+        "pickup_date",
+        "pickup_month",
+        "pickup_hour",
+        "has_quality_warning",
+        "pickup_zone_name",
+        "pickup_borough",
+        "dropoff_zone_name",
+        "dropoff_borough"
+      ]
+    },
+    "gold.mart_pickup_activity": {
+      "description": "Uma linha por mês de origem, zona e hora de embarque.",
+      "columns": [
+        "source_month",
+        "pickup_zone_id",
+        "pickup_zone_name",
+        "pickup_hour",
+        "trip_count",
+        "recorded_fare_amount",
+        "unusual_trip_count"
+      ]
+    },
+    "gold.mart_monthly_activity": {
+      "description": "Uma linha por mês calendário de embarque.",
+      "columns": [
+        "pickup_month",
+        "trip_count",
+        "recorded_fare_amount",
+        "recorded_total_amount",
+        "missing_fare_count",
+        "unusual_trip_count"
+      ]
+    },
+    "gold.mart_route_duration": {
+      "description": "Uma linha por mês de origem e par origem/destino.",
+      "columns": [
+        "source_month",
+        "pickup_zone_id",
+        "dropoff_zone_id",
+        "pickup_zone_name",
+        "dropoff_zone_name",
+        "trip_count",
+        "average_duration_minutes",
+        "median_duration_minutes",
+        "unusual_trip_count"
+      ]
+    },
+    "ops.month_status": {
+      "description": "Uma linha de estado de preparação por mês; SUCCESS aqui não garante Gold publicada.",
+      "columns": [
+        "source_month",
+        "run_id",
+        "status",
+        "input_count",
+        "accepted_count",
+        "rejected_count",
+        "unusual_count",
+        "updated_at"
+      ]
+    },
+    "ops.run_events": {
+      "description": "Eventos de execução append-only; evento pipeline usa primeiro mês como referência para a execução completa.",
+      "columns": [
+        "source_month",
+        "run_id",
+        "service",
+        "status",
+        "event_time",
+        "error_type"
+      ]
+    },
+    "ops.connectivity_probe": {
+      "description": "Tabela de conectividade.",
+      "columns": [
+        "probe_id"
+      ]
+    },
+    "ops.reprocessing_evidence": {
+      "description": "Opcional; uma evidência por etapa do teste de reprocessamento.",
+      "columns": [
+        "test_run_id",
+        "source_month",
+        "stage",
+        "recorded_at",
+        "evidence_json"
+      ]
+    }
+  }
+}

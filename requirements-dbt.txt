@@ -1,3 +1,0 @@
-# Install in .venv-dbt; keep separate from Airflow's dependency constraints.
-dbt-core>=1.10,<1.11
-dbt-databricks>=1.10,<1.11

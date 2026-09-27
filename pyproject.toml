@@ -4,10 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "urban-mobility-pipeline"
-version = "0.1.0"
-description = "Service-oriented taxi analytics with Databricks, Airflow, PySpark and dbt"
+version = "0.2.0"
+description = "Pipeline acadêmico de mobilidade com Databricks, PySpark e SQL"
 requires-python = ">=3.11"
 dependencies = []
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+mobility = ["catalog.json"]

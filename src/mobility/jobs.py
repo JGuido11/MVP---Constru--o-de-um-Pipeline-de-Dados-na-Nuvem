@@ -25,7 +25,7 @@ class BatchJob:
         if not run_id or len(run_id) > 256:
             raise ValueError("run_id must contain 1–256 characters")
         # Invalidate publication before touching bronze or silver. Failed attempts
-        # never leave a month marked ready for dbt.
+        # never leave a month marked ready for gold.
         self.store.status(month, run_id, "RUNNING")
         try:
             self.store.event(month, run_id, self.service, "STARTED")

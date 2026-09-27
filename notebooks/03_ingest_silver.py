@@ -5,7 +5,7 @@ dbutils.widgets.text("catalog", "workspace", "Catálogo")
 dbutils.widgets.text("schema_prefix", "mobility", "Prefixo dos schemas")
 dbutils.widgets.text(
     "project_root",
-    "/Workspace/Users/joaopgher@gmail.com/urban_mobility",
+    "",
     "Pasta do projeto no Workspace",
 )
 dbutils.widgets.text("run_id", "", "ID da execução (vazio gera UUID)")
