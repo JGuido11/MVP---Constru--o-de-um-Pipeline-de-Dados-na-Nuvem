@@ -92,11 +92,11 @@ Execute [analysis.py](notebooks/analysis.py) somente após o sucesso integral do
 
 **Discussão geral pendente:** integrar as três respostas e relacioná-las ao problema. Não interpretar atividade observada como demanda total, valores registrados como lucro ou duração como prova de congestionamento. Horários locais sem fuso explícito não resolvem ambiguidades de horário de verão. Medianas são aproximadas.
 
-Insira aqui os screenshots das respostas e a interpretação dos números reais. Use [EVIDENCES.md](docs/EVIDENCES.md) para organizar a coleta; não substitua evidências por imagens ilustrativas.
+Insira aqui os screenshots das respostas e a interpretação dos números reais. Use [o guia de screenshots](docs/SCREENSHOTS_EXEMPLO.md) e [o roteiro de evidências](docs/EVIDENCES.md) para organizar a coleta; não substitua evidências por imagens ilustrativas.
 
 ## 7. Autoavaliação
 
-**Pendente de preenchimento pelo autor após executar a versão final.**
+**Pendente de preenchimento pelo autor após executar a versão final.** Consulte o [modelo de autoavaliação](docs/AUTOAVALIACAO_EXEMPLO.md), substitua os campos de exemplo e transcreva aqui a versão que corresponde à execução real.
 
 - Quais objetivos e perguntas foram atendidos? Quais ficaram sem resposta e por quê?
 - Quais dificuldades ocorreram de fato na coleta, execução, modelagem e análise? Como foram resolvidas?

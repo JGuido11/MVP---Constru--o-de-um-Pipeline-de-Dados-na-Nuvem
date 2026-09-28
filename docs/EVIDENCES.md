@@ -1,6 +1,6 @@
 # Evidências para finalizar a entrega
 
-Este roteiro segue o enunciado anexado da disciplina. A organização textual está pronta; a conformidade completa depende das evidências e resultados reais.
+Este roteiro segue o enunciado anexado da disciplina. A organização textual está pronta; a conformidade completa depende das evidências e resultados reais. Veja o [guia com exemplos de screenshots, legendas e interpretações](SCREENSHOTS_EXEMPLO.md) e o [modelo de autoavaliação](AUTOAVALIACAO_EXEMPLO.md).
 
 | Evidência | Onde obter | Onde inserir no README |
 |---|---|---|
