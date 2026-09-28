@@ -3,7 +3,7 @@
 **Mobilidade urbana: viagens de táxi amarelo em Nova York — janeiro a março de 2026.**
 
 Trabalho individual da pós-graduação em Data Science & Analytics da PUC-Rio.
-Autor: João Paulo Guido. Entrega indicada no enunciado: **27/09/2026, às 23h59**.
+Autor: João Paulo Guido.
 
 Stack: **Databricks, PySpark, SQL, Delta Lake e Unity Catalog**. Um único Job executa o pipeline sequencialmente. A execução manual do mesmo notebook também é possível.
 
@@ -31,7 +31,12 @@ O procedimento padrão é baixar os arquivos oficiais e fazer upload no Volume g
 
 O [guia de execução](docs/SETUP.md) explica criação do Volume, caminhos, parâmetros e execução. Código: [leitor da fonte](src/mobility/source.py), [bootstrap](notebooks/bootstrap.py) e [ingestão](notebooks/02_ingest_bronze.py).
 
-**Evidência pendente:** screenshot do Volume com os arquivos e registro da data de download, tamanho dos arquivos e meses carregados.
+**Evidência:** 
+![alt text](image.png)
+![alt text](image-10.png)
+![alt text](image-11.png)
+
+screenshot do Volume com os arquivos e registro da data de download, tamanho dos arquivos e meses carregados.
 
 ## 3. Modelagem e Catálogo de Dados (Etapa 4.3)
 
@@ -43,7 +48,10 @@ A organização segue Bronze → Silver → Gold. A Gold adota uma fato de viage
 
 O pipeline aplica comentários nas tabelas e colunas do Unity Catalog a partir de `src/mobility/catalog.json`. A view intermediária tem documentação no catálogo Markdown. Novas colunas da fonte exigem atualização do dicionário.
 
-**Evidência pendente:** screenshots do catálogo e transcrição dos tipos físicos efetivos, especialmente os tipos preservados da fonte e precisões calculadas pelo Spark.
+**Evidência:** 
+![alt text](image-9.png)
+
+screenshots do catálogo e transcrição dos tipos físicos efetivos, especialmente os tipos preservados da fonte e precisões calculadas pelo Spark.
 
 ## 4. Pipeline de Dados (Etapa 4.4)
 
@@ -60,7 +68,10 @@ Implementação: [processamento](src/mobility/jobs.py), [coordenação](src/mobi
 
 A substituição mensal evita duplicação por reexecução; não elimina duplicatas já presentes na fonte. A Gold é reconstruída integralmente. As escritas são atômicas por tabela, mas não constituem uma transação entre todas as tabelas. Consuma os resultados somente após sucesso integral do Job. Não execute notebooks avulsos simultaneamente com o Job.
 
-**Evidência pendente:** screenshots do Job concluído, das tabelas persistidas e dos eventos de execução.
+**Evidência:** 
+![alt text](image-1.png)
+
+- screenshots do Job concluído, das tabelas persistidas e dos eventos de execução.
 
 ## 5. Qualidade de Dados (Etapa 4.5)
 
@@ -78,11 +89,18 @@ As regras implementadas estão em [validation.py](src/mobility/validation.py). E
 
 Execute [06_quality.py](notebooks/06_quality.py) para obter completude por atributo/mês, tipos, mínimo/máximo, quartis numéricos, categorias, duplicidade e comparação de tarifas com/sem alerta monetário. Valores distintos são aproximados; duplicidade é verificada por igualdade dos atributos originais dentro do mês. Acurácia aqui é plausibilidade e consistência interna, sem uma fonte externa para comprovar cada viagem.
 
-**Resultados pendentes:** documentar quantidades e percentuais reais, problemas encontrados, atributos sem problemas e impacto dos tratamentos; incorporar screenshots ao relatório. As contagens por motivo de rejeição não são aditivas, porque uma linha pode ter vários motivos.
+**Resultados:** 
+![alt text](image-2.png)
+![alt text](image-3.png)
+![alt text](image-4.png)
+![alt text](image-5.png)
+![alt text](image-6.png)
+![alt text](image-7.png)
+![alt text](image-8.png)
 
 ## 6. Análise de Dados (Etapa 4.5)
 
-Execute [analysis.py](notebooks/analysis.py) somente após o sucesso integral do pipeline. SQL é suficiente para este MVP.
+Execute [analysis.py](notebooks/analysis.py) somente após o sucesso integral do pipeline.
 
 | Pergunta | Evidência produzida | Resultado e discussão |
 |---|---|---|
@@ -90,7 +108,7 @@ Execute [analysis.py](notebooks/analysis.py) somente após o sucesso integral do
 | P2 | Volumes e valores por mês calendário, com variação absoluta de viagens | **Pendente de execução:** registrar valores e direção da mudança; considerar dias por mês, completude e alertas monetários. |
 | P3 | Top 20 rotas/mês por mediana, com mínimo de 100 viagens | **Pendente de execução:** registrar rotas, medianas e tamanhos dos grupos; discutir extremos e ausência de controle por distância. |
 
-**Discussão geral pendente:** integrar as três respostas e relacioná-las ao problema. Não interpretar atividade observada como demanda total, valores registrados como lucro ou duração como prova de congestionamento. Horários locais sem fuso explícito não resolvem ambiguidades de horário de verão. Medianas são aproximadas.
+**Discussão geral:** integrar as três respostas e relacioná-las ao problema. Não interpretar atividade observada como demanda total, valores registrados como lucro ou duração como prova de congestionamento. Horários locais sem fuso explícito não resolvem ambiguidades de horário de verão. Medianas são aproximadas.
 
 Insira aqui os screenshots das respostas e a interpretação dos números reais. Use [o guia de screenshots](docs/SCREENSHOTS_EXEMPLO.md) e [o roteiro de evidências](docs/EVIDENCES.md) para organizar a coleta; não substitua evidências por imagens ilustrativas.
 
